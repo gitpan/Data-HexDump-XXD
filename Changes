@@ -3,3 +3,5 @@ Revision history for Data-HexDump-XXD
 0.0.1  Tue Jul 31 10:22:35 2007
        Initial release.
 
+0.0.2  Tue Jul 31 18:18:18 2007
+       Added tests in MANIFEST.
