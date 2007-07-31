@@ -1,0 +1,20 @@
+---
+name: Data-HexDump-XXD
+version: 0.0.1
+author:
+  - 'Flavio Poletti <flavio [at] polettix [dot] it>'
+abstract: 'format hexadecimal dump like B<xxd>'
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Test::More: 0
+  version: 0
+provides:
+  Data::HexDump::XXD:
+    file: lib/Data/HexDump/XXD.pm
+    version: 0.0.1
+generated_by: Module::Build version 0.2808
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
