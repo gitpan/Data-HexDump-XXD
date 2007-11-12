@@ -5,6 +5,7 @@ Makefile.PL
 MANIFEST
 META.yml
 README
+eg/xxd
 t/00.load.t
 t/01.xxd.t
 t/02.xxd_r.t

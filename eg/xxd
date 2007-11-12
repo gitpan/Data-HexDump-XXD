@@ -1,170 +1,168 @@
-package Data::HexDump::XXD;
-
-use version; our $VERSION = qv('0.1.0');
-
-use warnings;
+#!/usr/bin/env perl
 use strict;
-use Carp;
+use warnings;
+use Pod::Usage qw( pod2usage );
+use Getopt::Long qw( :config gnu_getopt );
+use version; my $VERSION = qv('0.0.1');
+use Data::HexDump::XXD qw( xxd xxd_r );
+use File::Slurp qw( slurp );
 
-use base 'Exporter';
+my %config = ();
+GetOptions(\%config, 'usage', 'help', 'man', 'version',
+   'plain|ps|postscript|p!', 'revert|r!');
+pod2usage(message => "$0 $VERSION", -verbose => 99, -sections => '')
+  if $config{version};
+pod2usage(-verbose => 99, -sections => 'USAGE') if $config{usage};
+pod2usage(-verbose => 99, -sections => 'USAGE|EXAMPLES|OPTIONS')
+  if $config{help};
+pod2usage(-verbose => 2) if $config{man};
 
-our @EXPORT_OK = qw( xxd_pack xxd_r xxd_unpack xxd );
+# Script implementation here
+my $indata = slurp(@ARGV ? $ARGV[0] : \*STDIN);
 
-# Other recommended modules (uncomment to use):
-#  use IO::Prompt;
-#  use Perl6::Export;
-#  use Perl6::Slurp;
-#  use Perl6::Say;
-#  use Regexp::Autoflags;
-#  use Readonly;
-
-# Module implementation here
-sub _xxd_line {    # format a hex dump a-la xxd
-   my ($counter, @octets) = @_;
-   $counter = sprintf '%07x:', $counter;
-   my ($hex, $dump);
-   my @sep = ('', ' ');
-   for my $i (0 .. $#octets) {
-      $hex .= unpack('H*', $octets[$i]) . $sep[$i % 2];
-      my $code = ord $octets[$i];
-      $dump .= ($code >= 0x20 && $code < 0x7F) ? $octets[$i] : '.';
+my $outdata;
+if ($config{plain}) {    # no real need for xxd/xxd_r here
+   if ($config{revert}) {
+      $indata =~ s/\s+//mxsg;
+      $outdata = pack 'H*', $indata;
    }
-
-   $hex .= ' ' x (40 - length $hex);
-   return join ' ', $counter, $hex, $dump;
-} ## end sub _xxd_line
-
-sub xxd {
-   my $length = length $_[0];
-   my $offset = 0;
-   my @retval;
-   while ($offset < $length) {
-      push @retval,
-        _xxd_line($offset, split //, substr $_[0], $offset, 16);
-      $offset += 16;
+   else {
+      $outdata = unpack 'H*', $indata;
+      $outdata =~ s/(.{32})/$1\n/mxsg;
    }
-   return @retval if wantarray;
-   return join "\n", @retval;
-} ## end sub xxd
-*xxd_unpack = \&xxd;
+} ## end if ($config{plain})
+else {
+   $outdata = $config{revert} ? xxd_r($indata) : xxd($indata);
+}
+$outdata .= "\n" unless $config{revert} || substr($outdata, -1) eq "\n";
 
-sub xxd_r {
-   my @retval;
-   for my $line (scalar(@_) > 1 ? @_ : split /\n/, $_[0]) {
-      my ($payload) = $line =~ m{\A\S+:\s (.*?) \s\s}xms;
-      next unless defined $payload;
-      $payload =~ s/\s//g;
-      push @retval, pack 'H*', $payload;
-   }
-   return join '', @retval;
-} ## end sub xxd_r
-*xxd_pack = \&xxd_r;
+binmode STDOUT;
+print {*STDOUT} $outdata;
 
-1;    # Magic true value required at end of module
 __END__
 
 =head1 NAME
 
-Data::HexDump::XXD - format hexadecimal dump like B<xxd>
+xxd - a minimal replacement for the *real* xxd program
 
 
 =head1 VERSION
 
-This document describes Data::HexDump::XXD version 0.0.1
+Just call
+
+   shell$ xxd --version
 
 
-=head1 SYNOPSIS
+=head1 USAGE
 
-   use Data::HexDump::XXD qw( xxd xxd_r );
-   
-   my $dump_string = xxd($binary_data);
-   my @dumped_lines = xxd($binary_data);
+   xxd [--usage] [--help] [--man] [--version]
 
-   my $binary = xxd_r($xxd_like_string);
-   my $binary = xxd_r(@xxd_like_lines);
-    
+   xxd [--plain|-p] [--revert|-r] [filename]
+  
+=head1 EXAMPLES
+
+   # Plain default behaviour
+   shell$ xxd somefile.bin > somefile.hex
+
+   # Go the other way
+   shell$ xxd -r somefile.hex > somefile_regenerated.bin
+
+   # You even have the "plain" option, as a bonus
+   shell$ xxd -p somefile.bin > somefile.plainhex
+
+
   
 =head1 DESCRIPTION
 
-Produce an hexadecimal dump like the program B<xxd> would do, and do the
-reverse as well.
+This example script can be used as a replacement for the B<xxd> utility
+itself, except that it does not have all its features. Apart from not
+supporting all the options, it also lacks devising consequent equal lines
+and grouping them with the C<*> like the real B<xxd> does.
 
-At the moment, only straight dumping is supported, and reverse assumes
-the same.
 
-=head1 INTERFACE 
+=head1 OPTIONS
+
+Note that options in the original B<xxd> always begin with a single
+hyphen, while options here start with a single hyphen for they short
+(one-char) form, and with two hyphens in their long form. This allows
+concatenation of switches (e.g. C<-rp> instead of C<-r -p>, which I
+find annoying in B<xxd>).
 
 =over
 
-=item B<my $dump = xxd($bindata);>
+=item --help
 
-=item B<my @dump_lines = xxd($bindata);>
+print a somewhat more verbose help, showing usage, this description of
+the options and some examples from the synopsis.
 
-=item B<my $dump = xxd_unpack($bindata);>
+=item --man
 
-=item B<my @dump_lines = xxd_unpack($bindata);>
+print out the full documentation for the script.
 
-Produce an hex dump of the input C<$bindata>. The dump can be either a
-single string or a list of lines depending on the calling context.
+=item --plain | -p
 
-C<xxd_unpack()> and C<xxd()> are synonimous.
+output in postscript continuous hexdump style. Also known as plain
+hexdump style. (From xxd manual).
 
+=item --revert | -r
 
-=item B<my $bindata = xxd_r($dump);>
+reverse operation: convert hexdump into binary. Use the combination
+C<-r -p> to read plain hexadecimal dumps without line number information
+and without a particular column layout. Additional whitespace and
+line-breaks are allowed anywhere. (From xxd manual, with adaptation).
 
-=item B<my $bindata = xxd_r(@dump_lines);>
+=item --usage
 
-=item B<my $bindata = xxd_pack($dump);>
+print a concise usage line and exit.
 
-=item B<my $bindata = xxd_pack(@dump_lines);>
+=item --version
 
-Reverse an B<xxd>-style hexadecimal dump. You can either provide a single
-string or an array of lines; in the first case, the line terminator
-is assumed to be a single newline character. Like B<xxd>, the ASCII dump
-is ignored and only the hexadecimal part is taken into account.
+print the version of the script.
 
 =back
 
-
 =head1 CONFIGURATION AND ENVIRONMENT
 
-Data::HexDump::XXD requires no configuration files or environment variables.
+xxd requires no configuration files or environment variables.
 
 
 =head1 DEPENDENCIES
 
-Among the non-core, only C<version>.
+L<version> is a I<de facto> standard but still not in core as of 5.8.8,
+so you'll need it (or you'll have to comment it out).
 
+L<Getopt::Long> and L<Pod::Usage> should be no problem, because they're in
+core.
+
+So, what you will really need are L<File::Slurp> and, of course,
+L<Data::HexDump::XXD>.
 
 =head1 BUGS AND LIMITATIONS
-
-It is currently limited to the basic behaviour of B<xxd>. Note that plain
-hex dump is pretty straightforward in Perl, you simply have to call:
-
-   my $hex = unpack 'H*', $bindata;
-
-Note also that the high nybble is always assumed to come first in
-dumps (see C<perldoc -f unpack>, C<H> template).
 
 No bugs have been reported.
 
 Please report any bugs or feature requests through http://rt.cpan.org/
 
+Only two options of the original B<xxd> are supported, but they should
+be the most useful and used.
+
+Consequent equal lines in dump are not grouped with C<*>.
+
 
 =head1 AUTHOR
 
-Flavio Poletti  C<< <flavio [at] polettix [dot] it> >>
+Flavio Poletti C<flavio@polettix.it>
 
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2007, Flavio Poletti C<< <flavio [at] polettix [dot] it> >>. All rights reserved.
+Copyright (c) 2006, Flavio Poletti C<flavio@polettix.it>. All rights reserved.
 
-This module is free software; you can redistribute it and/or
+This script is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself. See L<perlartistic>
 and L<perlgpl>.
 
-Questo modulo è software libero: potete ridistribuirlo e/o
+Questo script è software libero: potete ridistribuirlo e/o
 modificarlo negli stessi termini di Perl stesso. Vedete anche
 L<perlartistic> e L<perlgpl>.
 
