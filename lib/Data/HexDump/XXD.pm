@@ -1,6 +1,6 @@
 package Data::HexDump::XXD;
 
-use version; our $VERSION = qv('0.1.0');
+use version; our $VERSION = qv('0.1.1');
 
 use warnings;
 use strict;
@@ -62,6 +62,8 @@ sub xxd_r {
 
 1;    # Magic true value required at end of module
 __END__
+
+=encoding iso-8859-1
 
 =head1 NAME
 

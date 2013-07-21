@@ -1,20 +1,23 @@
 ---
-name: Data-HexDump-XXD
-version: 0.1.0
+abstract: 'format hexadecimal dumps and reverse like B<xxd>'
 author:
   - 'Flavio Poletti <flavio [at] polettix [dot] it>'
-abstract: 'format hexadecimal dumps and reverse like B<xxd>'
-license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.112150'
+license: unknown
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Data-HexDump-XXD
+no_index:
+  directory:
+    - t
+    - inc
 requires:
   Test::More: 0
   version: 0
-provides:
-  Data::HexDump::XXD:
-    file: lib/Data/HexDump/XXD.pm
-    version: 0.1.0
-generated_by: Module::Build version 0.2808
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+version: v0.1.1
